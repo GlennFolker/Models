@@ -3,7 +3,7 @@ package model;
 import arc.graphics.*;
 import arc.struct.*;
 import arc.util.*;
-import attribute.*;
+import model.attribute.*;
 import model.part.*;
 
 public class Model implements Disposable{

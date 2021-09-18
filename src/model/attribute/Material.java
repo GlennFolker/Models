@@ -1,4 +1,4 @@
-package attribute;
+package model.attribute;
 
 import arc.struct.*;
 
