@@ -238,12 +238,12 @@
 			"textures": [
 				{
 					"id": "base_color_texture", 
-					"filename": "wavefront-tex.png", 
+					"filename": "model-tex.png",
 					"type": "DIFFUSE"
 				}, 
 				{
 					"id": "emission_color_texture", 
-					"filename": "wavefront-front-tex.png", 
+					"filename": "model-emit-tex.png",
 					"type": "EMISSIVE"
 				}
 			]
