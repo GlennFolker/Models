@@ -1,0 +1,9 @@
+# Build settings
+.gradle/
+.settings/
+build/
+bin/
+
+# IDE-specific
+.idea/
+.vscode/
