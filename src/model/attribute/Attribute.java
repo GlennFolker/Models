@@ -4,23 +4,26 @@ import arc.*;
 import arc.graphics.*;
 import arc.graphics.g2d.*;
 import arc.graphics.g2d.TextureAtlas.*;
+import arc.graphics.gl.*;
 import arc.math.*;
 import arc.struct.*;
 import arc.util.*;
+import model.attribute.Attribute.*;
+import model.attribute.Attribute.BlendAttr.*;
+import model.attribute.Attribute.ColAttr.*;
+import model.attribute.Attribute.FAttr.*;
+import model.attribute.Attribute.TexAttr.*;
 
-/**
- * Defines an attribute type to be used in a {@link Material}. These attributes have a pre-registered identifiers for
- * mapping and masking purposes.
- */
-public abstract class Attribute{
+/** Defines an attribute type to be used in a {@link Material}. These attributes have a pre-registered aliases. */
+public abstract class Attribute<T, A extends AttrAlias<T>>{
     private static final Seq<String> registered = new Seq<>();
 
-    /** The identifier of this attribute, used for mapping and masking. */
-    public final long id;
+    /** The alias of this attribute that contains name and an identifier, used for mapping and masking. */
+    public final A alias;
 
     /** Basic attribute instantiation. The passed ID parameter must responsibly correlate to one of the supported IDs. */
-    public Attribute(long id){
-        this.id = id;
+    public Attribute(A alias){
+        this.alias = alias;
     }
 
     /** Registers an attribute by its alias. Returns a new identifier if unknown, and existing identifier otherwise. */
@@ -34,109 +37,96 @@ public abstract class Attribute{
         }
     }
 
+    /** Applies necessary uniforms of this attribute to the given shader. */
+    public void apply(Shader shader){}
+
+    /** Specifies an alias for materials to be used in shader uniforms and provides a registered ID for the attribute. */
+    public interface AttrAlias<V>{
+        /** @return The name of this alias, typically overridden by {@link Enum#name()}. */
+        String name();
+
+        /** @return The mask of this attribute alias. */
+        long id();
+
+        /** @return The uniform name of this attribute alias. */
+        default String uniform(){
+            return "u_" + name();
+        }
+
+        /** @return The pre-processor flag name of this attribute alias. */
+        default String flag(){
+            return name() + "Flag";
+        }
+    }
+
     /** Defines an {@link Attribute} type containing a single {@code float} value. */
-    public static class FAttr extends Attribute{
-        public static final String shininessAlias = "shininess";
-        public static final long shininess = register(shininessAlias);
-
-        public static final String alphaTestAlias = "alphaTest";
-        public static final long alphaTest = register(alphaTestAlias);
-
-        public static final long all = shininess | alphaTest;
-
+    public static class FAttr extends Attribute<FAttr, FAlias>{
         public final float value;
 
-        public FAttr(long id, float value){
-            super(id);
-            if((id & all) == 0L) throw new IllegalArgumentException("Invalid type specified!");
-
+        public FAttr(FAlias alias, float value){
+            super(alias);
             this.value = value;
         }
 
-        public static FAttr shininess(float value){
-            return new FAttr(shininess, value);
+        @Override
+        public void apply(Shader shader){
+            shader.setUniformf(alias.uniform(), value);
         }
 
-        public static FAttr alphaTest(float value){
-            return new FAttr(alphaTest, value);
+        /** Defines all supported attribute aliases for a {@link FAttr}. */
+        public enum FAlias implements AttrAlias<FAttr>{
+            shininess,
+            alphaTest;
+
+            public static final FAlias[] all = values();
+
+            public final long id = register(name());
+
+            @Override
+            public long id(){
+                return id;
+            }
         }
     }
 
     /** Defines an {@link Attribute} type containing a single {@link Color} value. */
-    public static class ColAttr extends Attribute{
-        public static final String diffuseAlias = "diffuseColor";
-        public static final long diffuse = register(diffuseAlias);
-
-        public static final String specularAlias = "specularColor";
-        public static final long specular = register(specularAlias);
-
-        public static final String emissiveAlias = "emissiveColor";
-        public static final long emissive = register(emissiveAlias);
-
-        public static final String ambientLightAlias = "ambientLightColor";
-        public static final long ambientLight = register(ambientLightAlias);
-
-        public static final long all = diffuse | specular | emissive | ambientLight;
-
+    public static class ColAttr extends Attribute<ColAttr, ColAlias>{
         public final Color value = Color.white.cpy();
 
-        public ColAttr(long id, Color value){
-            this(id, value.r, value.g, value.b, value.a);
+        public ColAttr(ColAlias alias, Color value){
+            this(alias, value.r, value.g, value.b, value.a);
         }
 
-        public ColAttr(long id, float r, float g, float b, float a){
-            super(id);
-            if((id & all) == 0L) throw new IllegalArgumentException("Invalid type specified!");
-
+        public ColAttr(ColAlias alias, float r, float g, float b, float a){
+            super(alias);
             value.set(r, g, b, a);
         }
 
-        public static ColAttr diffuse(Color color){
-            return new ColAttr(diffuse, color);
+        @Override
+        public void apply(Shader shader){
+            shader.setUniformf(alias.uniform(), value);
         }
 
-        public static ColAttr diffuse(float r, float g, float b, float a){
-            return new ColAttr(diffuse, r, g, b, a);
-        }
+        /** Defines all supported attribute aliases for a {@link ColAttr}. */
+        public enum ColAlias implements AttrAlias<ColAttr>{
+            diffuseColor,
+            specularColor,
+            emissiveColor,
+            ambientLightColor;
 
-        public static ColAttr specular(Color color){
-            return new ColAttr(specular, color);
-        }
+            public static final ColAlias[] all = values();
 
-        public static ColAttr specular(float r, float g, float b, float a){
-            return new ColAttr(specular, r, g, b, a);
-        }
+            public final long id = register(name());
 
-        public static ColAttr emissive(Color color){
-            return new ColAttr(emissive, color);
-        }
-
-        public static ColAttr emissive(float r, float g, float b, float a){
-            return new ColAttr(emissive, r, g, b, a);
-        }
-
-        public static ColAttr ambientLight(Color color){
-            return new ColAttr(ambientLight, color);
-        }
-
-        public static ColAttr ambientLight(float r, float g, float b, float a){
-            return new ColAttr(ambientLight, r, g, b, a);
+            @Override
+            public long id(){
+                return id;
+            }
         }
     }
 
     /** Defines an {@link Attribute} type containing a {@link Texture} along with its UV mapping. */
-    public static class TexAttr extends Attribute{
-        public static final String diffuseAlias = "diffuseTexture";
-        public static final long diffuse = register(diffuseAlias);
-
-        public static final String specularAlias = "specularTexture";
-        public static final long specular = register(specularAlias);
-
-        public static final String emissiveAlias = "emissiveTexture";
-        public static final long emissive = register(emissiveAlias);
-
-        protected static long all = diffuse | specular | emissive;
-
+    public static class TexAttr extends Attribute<TexAttr, TexAlias>{
         /** Texture name, used to optionally remap the texture value and UV mappings. */
         public String name;
         /** The bound texture, can be {@link #remap()}ed. */
@@ -146,26 +136,24 @@ public abstract class Attribute{
         public float u2 = 1f;
         public float v2 = 1f;
 
-        public TexAttr(long id, @Nullable String name){
-            this(id, name, 0f, 0f, 1f, 1f);
+        public TexAttr(TexAlias alias, @Nullable String name){
+            this(alias, name, 0f, 0f, 1f, 1f);
         }
 
-        public TexAttr(long id, @Nullable Texture texture){
-            this(id, texture, null, 0f, 0f, 1f, 1f);
+        public TexAttr(TexAlias alias, @Nullable Texture texture){
+            this(alias, texture, null, 0f, 0f, 1f, 1f);
         }
 
-        public TexAttr(long id, TextureRegion reg){
-            this(id, reg.texture, reg instanceof AtlasRegion at ? at.name : null, reg.u, reg.v, reg.u2, reg.v2);
+        public TexAttr(TexAlias alias, TextureRegion reg){
+            this(alias, reg.texture, reg instanceof AtlasRegion at ? at.name : null, reg.u, reg.v, reg.u2, reg.v2);
         }
 
-        public TexAttr(long id, @Nullable String name, float u, float v, float u2, float v2){
-            this(id, null, name, u, v, u2, v2);
+        public TexAttr(TexAlias alias, @Nullable String name, float u, float v, float u2, float v2){
+            this(alias, null, name, u, v, u2, v2);
         }
 
-        public TexAttr(long id, @Nullable Texture value, String name, float u, float v, float u2, float v2){
-            super(id);
-            if((id & all) == 0L) throw new IllegalArgumentException("Invalid type specified!");
-
+        public TexAttr(TexAlias alias, @Nullable Texture value, String name, float u, float v, float u2, float v2){
+            super(alias);
             set(value, name, u, v, u2, v2);
         }
 
@@ -197,36 +185,37 @@ public abstract class Attribute{
             }
         }
 
-        public static TexAttr diffuse(Texture texture){
-            return new TexAttr(diffuse, texture);
+        /**
+         * @inheritDocs
+         * Calls to this function must be ordered by the ordinal of the {@link TexAlias}.
+         */
+        @Override
+        public void apply(Shader shader){
+            int val = TexAlias.all.length - alias.ordinal();
+
+            value.bind(val);
+            shader.setUniformi(alias.uniform(), val);
         }
 
-        public static TexAttr diffuse(TextureRegion region){
-            return new TexAttr(diffuse, region);
-        }
+        /** Defines all supported attribute aliases for a {@link TexAttr}. */
+        public enum TexAlias implements AttrAlias<TexAttr>{
+            diffuseTexture,
+            specularTexture,
+            emissiveTexture;
 
-        public static TexAttr specular(Texture texture){
-            return new TexAttr(specular, texture);
-        }
+            public static final TexAlias[] all = values();
 
-        public static TexAttr specular(TextureRegion region){
-            return new TexAttr(specular, region);
-        }
+            public final long id = register(name());
 
-        public static TexAttr emissive(Texture texture){
-            return new TexAttr(emissive, texture);
-        }
-
-        public static TexAttr emissive(TextureRegion region){
-            return new TexAttr(emissive, region);
+            @Override
+            public long id(){
+                return id;
+            }
         }
     }
 
     /** Defines an {@link Attribute} type containing blending source and destination function values. */
-    public static class BlendAttr extends Attribute{
-        public static final String blendAlias = "blended";
-        public static final long blend = register(blendAlias);
-
+    public static class BlendAttr extends Attribute<BlendAttr, BlendAlias>{
         /** Specifies how incoming colors are computed. Defaults to {@link Gl#srcAlpha}. */
         public int src;
         /** Specifies how existing colors are computed. Defaults to {@link Gl#oneMinusSrcAlpha}. */
@@ -241,9 +230,21 @@ public abstract class Attribute{
         }
 
         public BlendAttr(int src, int dst){
-            super(blend);
+            super(BlendAlias.blended);
             this.src = src;
             this.dst = dst;
+        }
+
+        /** Defines all supported attribute aliases for a {@link BlendAttr}. */
+        public enum BlendAlias implements AttrAlias<BlendAttr>{
+            blended;
+
+            public final long id = register(name());
+
+            @Override
+            public long id(){
+                return id;
+            }
         }
     }
 }
