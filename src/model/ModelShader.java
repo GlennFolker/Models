@@ -42,7 +42,7 @@ public class ModelShader extends Shader{
 
     private static String prefix(Material material){
         var builder = new StringBuilder();
-        material.each(attr -> builder.append("#define ").append(attr.alias.flag()));
+        material.each(attr -> builder.append("#define ").append(attr.alias.flag()).append(";\n"));
 
         return builder.toString();
     }
@@ -65,6 +65,7 @@ public class ModelShader extends Shader{
         setUniformMatrix4("u_proj", cam.combined.val);
         setUniformMatrix4("u_trans", model.trns.val);
         setUniformf("u_camPos", cam.position);
+        setUniformf("u_res", Core.graphics.getWidth(), Core.graphics.getHeight());
         setUniformf("u_scl", cam.width / Core.graphics.getWidth(), cam.height / Core.graphics.getHeight());
 
         model.material.each(attr -> attr.apply(this));

@@ -5,6 +5,7 @@ uniform mat4 u_proj;
 uniform mat4 u_trans;
 
 uniform vec3 u_camPos;
+uniform vec2 u_res;
 uniform vec2 u_scl;
 
 void main(){

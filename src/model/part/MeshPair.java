@@ -30,7 +30,7 @@ public class MeshPair implements Disposable{
      */
     public class MeshPart{
         /** The mesh part ID. */
-        public String id;
+        public String id = "";
 
         /** The primitive type of this mesh part, such as {@link Gl#triangles} or {@link Gl#lines}. */
         public int type;

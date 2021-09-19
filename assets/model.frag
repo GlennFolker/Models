@@ -1,3 +1,13 @@
+#ifdef diffuseColorFlag
+uniform vec4 u_diffuseColor;
+#endif
+
 void main(){
-    gl_Color = vec4(1.0);
+    #ifdef diffuseColorFlag
+    vec4 color = u_diffuseColor;
+    #else
+    vec4 color = vec4(1.0);
+    #endif
+
+    gl_FragColor = color;
 }
