@@ -109,10 +109,10 @@ public abstract class Attribute<T, A extends AttrAlias<T>>{
 
         /** Defines all supported attribute aliases for a {@link ColAttr}. */
         public enum ColAlias implements AttrAlias<ColAttr>{
-            diffuseColor,
-            specularColor,
-            emissiveColor,
-            ambientLightColor;
+            diffuse,
+            specular,
+            emissive,
+            ambientLight;
 
             public static final ColAlias[] all = values();
 
@@ -121,6 +121,16 @@ public abstract class Attribute<T, A extends AttrAlias<T>>{
             @Override
             public long id(){
                 return id;
+            }
+
+            @Override
+            public String uniform(){
+                return "u_" + name() + "Color";
+            }
+
+            @Override
+            public String flag(){
+                return name() + "ColorFlag";
             }
         }
     }
@@ -199,9 +209,9 @@ public abstract class Attribute<T, A extends AttrAlias<T>>{
 
         /** Defines all supported attribute aliases for a {@link TexAttr}. */
         public enum TexAlias implements AttrAlias<TexAttr>{
-            diffuseTexture,
-            specularTexture,
-            emissiveTexture;
+            diffuse,
+            specular,
+            emissive;
 
             public static final TexAlias[] all = values();
 
@@ -210,6 +220,16 @@ public abstract class Attribute<T, A extends AttrAlias<T>>{
             @Override
             public long id(){
                 return id;
+            }
+
+            @Override
+            public String uniform(){
+                return "u_" + name() + "Texture";
+            }
+
+            @Override
+            public String flag(){
+                return name() + "TextureFlag";
             }
         }
     }

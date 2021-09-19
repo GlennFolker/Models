@@ -11,10 +11,14 @@ import arc.util.*;
  */
 public class MeshPair implements Disposable{
     /** The {@link Mesh} that this pair is bound to. */
-    public final Mesh mesh;
+    public Mesh mesh;
     /** All the {@link MeshPart}s that this pair contains. */
     public final Seq<MeshPart> parts = new Seq<>();
 
+    /** Constructs an empty mesh pair. {@link #mesh} must be setup before this pair can be used. */
+    public MeshPair(){}
+
+    /** Constructs a mesh pair with the specified mesh. */
     public MeshPair(Mesh mesh){
         this.mesh = mesh;
     }
