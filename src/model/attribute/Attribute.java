@@ -196,7 +196,7 @@ public abstract class Attribute<T, A extends AttrAlias<T>>{
         }
 
         /**
-         * @inheritDocs
+         * @inheritDoc
          * Calls to this function must be ordered by the ordinal of the {@link TexAlias}.
          */
         @Override

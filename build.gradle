@@ -56,6 +56,13 @@ tasks.withType(JavaCompile){
     options.compilerArgs.addAll(['--release', '8'])
 }
 
+tasks.withType(Javadoc){
+    options{
+        addStringOption('Xdoclint:none', '-quiet')
+        addStringOption('-release', '16')
+    }
+}
+
 task sourcesJar(type: Jar, dependsOn: classes){
     archiveClassifier.set 'sources'
     from sourceSets.main.allSource
