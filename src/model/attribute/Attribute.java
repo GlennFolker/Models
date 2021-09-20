@@ -26,6 +26,12 @@ public abstract class Attribute<T, A extends AttrAlias<T>>{
         this.alias = alias;
     }
 
+    /** @return The copy of this attribute. */
+    public abstract T copy();
+
+    /** Applies necessary uniforms of this attribute to the given shader. */
+    public void apply(Shader shader){}
+
     /** Registers an attribute by its alias. Returns a new identifier if unknown, and existing identifier otherwise. */
     public static long register(String alias){
         int i = registered.indexOf(alias::equals);
@@ -36,9 +42,6 @@ public abstract class Attribute<T, A extends AttrAlias<T>>{
             return 1L << (registered.size - 1);
         }
     }
-
-    /** Applies necessary uniforms of this attribute to the given shader. */
-    public void apply(Shader shader){}
 
     /** Specifies an alias for materials to be used in shader uniforms and provides a registered ID for the attribute. */
     public interface AttrAlias<V>{
@@ -66,6 +69,11 @@ public abstract class Attribute<T, A extends AttrAlias<T>>{
         public FAttr(FAlias alias, float value){
             super(alias);
             this.value = value;
+        }
+
+        @Override
+        public FAttr copy(){
+            return new FAttr(alias, value);
         }
 
         @Override
@@ -100,6 +108,11 @@ public abstract class Attribute<T, A extends AttrAlias<T>>{
         public ColAttr(ColAlias alias, float r, float g, float b, float a){
             super(alias);
             value.set(r, g, b, a);
+        }
+
+        @Override
+        public ColAttr copy(){
+            return new ColAttr(alias, value);
         }
 
         @Override
@@ -195,6 +208,11 @@ public abstract class Attribute<T, A extends AttrAlias<T>>{
             }
         }
 
+        @Override
+        public TexAttr copy(){
+            return new TexAttr(alias, value, name, u, v, u2, v2);
+        }
+
         /**
          * @inheritDoc
          * Calls to this function must be ordered by the ordinal of the {@link TexAlias}.
@@ -253,6 +271,11 @@ public abstract class Attribute<T, A extends AttrAlias<T>>{
             super(BlendAlias.blended);
             this.src = src;
             this.dst = dst;
+        }
+
+        @Override
+        public BlendAttr copy(){
+            return new BlendAttr(src, dst);
         }
 
         /** Defines all supported attribute aliases for a {@link BlendAttr}. */

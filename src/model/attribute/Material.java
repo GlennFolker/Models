@@ -21,6 +21,19 @@ public class Material{
         set(attributes);
     }
 
+    public Material(Material from){
+        id = from.id;
+        mask = from.mask;
+
+        for(var e : from.attributes.entries()){
+            attributes.put(e.key, (Attribute<?, ?>)e.value.copy());
+        }
+    }
+
+    public Material copy(){
+        return new Material(this);
+    }
+
     /** Gets an {@link Attribute} using its attribute alias. */
     public <T extends Attribute<T, V>, V extends AttrAlias<T>> T get(V alias){
         return (T)attributes.get(alias.id());

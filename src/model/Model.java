@@ -14,6 +14,7 @@ import model.attribute.Attribute.FAttr.*;
 import model.attribute.Attribute.TexAttr.*;
 import model.part.*;
 import model.part.MeshPair.*;
+import model.part.Node.*;
 
 /** A model is a complete set of meshes with specified indices offset and length, model nodes tree, and materials. */
 public class Model implements Disposable{
@@ -34,6 +35,7 @@ public class Model implements Disposable{
         id = json.require("id").asString();
         loadMeshes(json.require("meshes"));
         loadMaterials(json.require("materials"));
+        loadNodes(json.require("nodes"));
     }
 
     protected void loadMeshes(JsonValue json){
@@ -124,6 +126,53 @@ public class Model implements Disposable{
                     mat.set(new TexAttr(alias, texData.require("filename").asString()));
                 }
             }
+
+            materials.add(mat);
+        }
+    }
+
+    protected void loadNodes(JsonValue json){
+        for(var data = json.child; data != null; data = json.next){
+            var node = new Node();
+            node.id = data.require("id").asString();
+
+            var trns = data.get("translation");
+            if(trns != null && trns.isArray()){
+                node.translation.set(
+                    trns.getFloat(0),
+                    trns.getFloat(1),
+                    trns.getFloat(2)
+                );
+            }
+
+            var rot = data.get("rotation");
+            if(rot != null && rot.isArray()){
+                node.rotation.set(
+                    rot.getFloat(0),
+                    rot.getFloat(1),
+                    rot.getFloat(2),
+                    rot.getFloat(3)
+                );
+            }
+
+            var scl = data.get("translation");
+            if(scl != null && scl.isArray()){
+                node.scaling.set(
+                    scl.getFloat(0),
+                    scl.getFloat(1),
+                    scl.getFloat(2)
+                );
+            }
+
+            for(var partData = data.require("parts").child; partData != null; partData = partData.next){
+                var part = node.new NodePart();
+                part.mesh = meshPart(partData.require("meshpartid").asString());
+                part.material = material(partData.require("materialid").asString());
+
+                node.parts.add(part);
+            }
+
+            nodes.add(node);
         }
     }
 
@@ -136,20 +185,64 @@ public class Model implements Disposable{
         materials.clear();
     }
 
+    /** @return The {@link MeshPart} with the specified ID, or null if there are none. */
+    public MeshPart meshPart(String id){
+        for(var mesh : meshes){
+            var part = mesh.parts.find(p -> p.id.equals(id));
+            if(part != null) return part;
+        }
+        return null;
+    }
+
+    /** @return The {@link Material} with the specified ID, or null if there are none. */
+    public Material material(String id){
+        return materials.find(m -> m.id.equals(id));
+    }
+
+    /** @return The recursively searched {@link Node} with the specified ID, or null if there are none. */
+    public Node node(Node parent, String id){
+        var set = parent == null ? nodes : parent.children;
+        for(var node : set){ // Flat checks first.
+            if(node.id.equals(id)) return node;
+        }
+
+        for(var node : set){ // If not found, search it recursively.
+            if(!node.children.isEmpty()){
+                for(var child : node.children){
+                    var res = node(child, id);
+                    if(res != null) return res;
+                }
+            }
+        }
+
+        return null;
+    }
+
     /** A packed renderable view of a {@link Model} used in {@link ModelShader} to specify renderings. */
     public static class ModelView implements Poolable{
         /** The transform matrix of this view. */
         public final Mat3D trns = new Mat3D();
         /** The {@link MeshPart} of this model to be rendered by the shader. */
-        public MeshPart part;
+        public MeshPart mesh;
         /** The {@link Material} of this view. */
         public Material material;
 
         @Override
         public void reset(){
             trns.idt();
-            part = null;
+            mesh = null;
             material = null;
+        }
+
+        /**
+         * Sets this view's properties to match the given {@link NodePart}.
+         * @return This instance, for convenience.
+         */
+        public ModelView set(NodePart part){
+            trns.set(part.node().worldTrns);
+            mesh = part.mesh;
+            material = part.material;
+            return this;
         }
     }
 }

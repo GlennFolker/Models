@@ -33,7 +33,7 @@ public class ModelTest{
             @Override
             public void init(){
                 model = new ModelView(){{
-                    part = new MeshPair(new Mesh(true, 4, 12, VertexAttribute.position3){{
+                    mesh = new MeshPair(new Mesh(true, 4, 12, VertexAttribute.position3){{
                         setVertices(new float[]{
                             -1f, -1f, 0f,
                             1f, -1f, 0f,
@@ -90,7 +90,7 @@ public class ModelTest{
                 shader.bind();
                 shader.apply();
 
-                model.part.render(shader);
+                model.mesh.render(shader);
 
                 Gl.disable(Gl.depthTest);
                 Gl.disable(Gl.blend);
