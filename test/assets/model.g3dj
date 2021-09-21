@@ -238,12 +238,12 @@
 			"textures": [
 				{
 					"id": "base_color_texture", 
-					"filename": "model-tex.png",
+					"filename": "model-tex",
 					"type": "DIFFUSE"
 				}, 
 				{
 					"id": "emission_color_texture", 
-					"filename": "model-emit-tex.png",
+					"filename": "model-emit-tex",
 					"type": "EMISSIVE"
 				}
 			]

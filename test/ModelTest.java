@@ -1,21 +1,18 @@
 import arc.*;
 import arc.backend.sdl.*;
 import arc.graphics.*;
+import arc.graphics.Texture.*;
+import arc.graphics.g2d.*;
 import arc.graphics.g3d.*;
-import arc.math.geom.*;
-import arc.util.*;
+import arc.struct.*;
+import arc.util.pooling.*;
+import arc.util.serialization.*;
 import model.*;
 import model.Model.*;
-import model.attribute.*;
 import model.attribute.Attribute.*;
-import model.attribute.Attribute.BlendAttr.*;
-import model.attribute.Attribute.ColAttr.*;
-import model.part.*;
 import org.junit.jupiter.api.*;
 
 public class ModelTest{
-    Quat q1 = new Quat();
-
     void app(ApplicationListener listener){
         new SdlApplication(listener, new SdlConfig(){{
             depth = 16;
@@ -25,75 +22,74 @@ public class ModelTest{
     }
 
     @Test
-    public void renderTest(){
+    public void assetTest(){
         app(new ApplicationListener(){
-            ModelView model;
+            ModelInstance model;
             Camera3D cam;
+
+            final Pool<ModelView> pool = Pools.get(ModelView.class, ModelView::new);
+            final Seq<ModelView> views = Seq.of(false, 100, ModelView.class);
 
             @Override
             public void init(){
-                model = new ModelView(){{
-                    mesh = new MeshPair(new Mesh(true, 4, 12, VertexAttribute.position3){{
-                        setVertices(new float[]{
-                            -1f, -1f, 0f,
-                            1f, -1f, 0f,
-                            1f, 1f, 0f,
-                            -1f, 1f, 0f
-                        });
-
-                        setIndices(new short[]{0, 1, 2, 2, 3, 0});
-                    }}).new MeshPart(){{
-                        type = Gl.triangles;
-                        offset = 0;
-                        count = 6;
-                    }};
-
-                    material = new Material(){{
-                        set(new ColAttr(ColAlias.diffuse, 1f, 0f, 0f, 1f));
-                        set(new BlendAttr(Gl.srcAlpha, Gl.oneMinusSrcAlpha));
-                    }};
-                }};
+                var resolver = Core.assets.getFileHandleResolver();
+                Core.assets.setLoader(Model.class, ".g3dj", new ModelLoader(resolver, new JsonReader()));
+                Core.assets.setLoader(Model.class, ".g3db", new ModelLoader(resolver, new UBJsonReader()));
 
                 cam = new Camera3D();
-                ModelShader.init();
+                Core.assets.load("model.g3dj", Model.class).loaded = e -> {
+                    e.materials.each(a -> a.each(t -> {
+                        if(t instanceof TexAttr v) v.remap();
+                    }));
+
+                    model = new ModelInstance(e);
+                };
+
+                var packer = new PixmapPacker(4096, 4096, 4, true);
+                packer.pack("model-tex", new Pixmap(Core.files.internal("model-tex.png")));
+                packer.pack("model-emit-tex", new Pixmap(Core.files.internal("model-emit-tex.png")));
+                Core.atlas = packer.generateTextureAtlas(TextureFilter.linear, TextureFilter.linear, false);
+
+                Core.assets.finishLoading();
             }
 
             @Override
             public void update(){
-                Time.update();
-
-                cam.position.set(0f, 0f, 10f);
+                cam.position.setZero();
                 cam.resize(Core.graphics.getWidth(), Core.graphics.getHeight());
                 cam.update();
 
+                Core.graphics.clear(0f, 0f, 0f, 0f);
+                Gl.depthMask(true);
+                Gl.clear(Gl.depthBufferBit);
                 Gl.enable(Gl.depthTest);
                 Gl.depthFunc(Gl.lequal);
 
-                Gl.depthMask(true);
-                Core.graphics.clear(0f, 0f, 0f, 1f);
-                Gl.clear(Gl.depthBufferBit);
+                model.views(pool, views);
 
-                var trns = model.trns;
-                trns.set(Tmp.v31.setZero(), q1.set(Vec3.X, Time.time), Tmp.v32.set(1f, 1f, 1f));
+                ModelShader prev = null;
+                var items = views.items;
+                int size = views.size;
 
-                var material = model.material;
-                var diff = material.get(ColAlias.diffuse);
-                diff.value.shiftHue(Time.time % 1f);
+                for(int i = 0; i < size; i++){
+                    var view = items[i];
+                    var shader = ModelShader.get(view.material);
+                    if(shader != prev){
+                        shader.bind();
+                        prev = shader;
+                    }
 
-                var blend = material.get(BlendAlias.blended);
-                Gl.enable(Gl.blend);
-                Gl.blendFunc(blend.src, blend.dst);
+                    shader.model = view;
+                    shader.cam = cam;
+                    shader.apply();
 
-                var shader = ModelShader.get(material);
-                shader.model = model;
-                shader.cam = cam;
-                shader.bind();
-                shader.apply();
+                    view.mesh.render(shader, true);
+                }
 
-                model.mesh.render(shader);
+                pool.freeAll(views);
+                views.size = 0;
 
                 Gl.disable(Gl.depthTest);
-                Gl.disable(Gl.blend);
             }
         });
     }
