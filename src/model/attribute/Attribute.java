@@ -186,7 +186,7 @@ public abstract class Attribute<T, A extends AttrAlias<T>>{
 
         public void set(@Nullable Texture value, @Nullable String name, float u, float v, float u2, float v2){
             this.value = value;
-            this.name = name;
+            this.name = name == null ? null : !name.endsWith(".png") ? name : name.substring(0, name.length() - 4);
             this.u = u;
             this.v = v;
             this.u2 = u2;
@@ -223,6 +223,7 @@ public abstract class Attribute<T, A extends AttrAlias<T>>{
 
             value.bind(val);
             shader.setUniformi(alias.uniform(), val);
+            shader.setUniformf("u_" + alias.name() + "UV", u, v, u2 - u, v2 - v);
         }
 
         /** Defines all supported attribute aliases for a {@link TexAttr}. */

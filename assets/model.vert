@@ -1,4 +1,5 @@
 attribute vec4 a_position;
+attribute vec3 a_normal;
 
 uniform int u_renderType;
 uniform mat4 u_proj;
@@ -8,7 +9,29 @@ uniform vec3 u_camPos;
 uniform vec2 u_res;
 uniform vec2 u_scl;
 
+#if defined(diffuseTextureFlag) || defined(emissiveTextureFlag)
+attribute vec2 a_texCoord0;
+#endif
+
+#ifdef diffuseTextureFlag
+uniform vec4 u_diffuseUV;
+varying vec2 v_diffuseUV;
+#endif
+
+#ifdef emissiveTextureFlag
+uniform vec4 u_emissiveUV;
+varying vec2 v_emissiveUV;
+#endif
+
 void main(){
+    #ifdef diffuseTextureFlag
+    v_diffuseUV = u_diffuseUV.xy + a_texCoord0 * u_diffuseUV.zw;
+    #endif
+
+    #ifdef emissiveTextureFlag
+    v_emissiveUV = u_emissiveUV.xy + a_texCoord0 * u_emissiveUV.zw;
+    #endif
+
     if(u_renderType == 0){
         gl_Position = u_proj * u_trans * a_position;
     }else if(u_renderType == 1){

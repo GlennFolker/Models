@@ -231,19 +231,19 @@
 			"id": "Material.001", 
 			"ambient": [ 0.050876,  0.050876,  0.050876], 
 			"diffuse": [ 1.000000,  1.000000,  1.000000], 
-			"emissive": [ 0.000000,  0.000000,  0.000000], 
+			"emissive": [ 1.000000,  1.000000,  1.000000], 
 			"opacity":  1.000000, 
 			"specular": [ 1.000000,  1.000000,  1.000000], 
 			"shininess":  100.000000, 
 			"textures": [
 				{
 					"id": "base_color_texture", 
-					"filename": "model-tex",
+					"filename": "model-tex.png",
 					"type": "DIFFUSE"
 				}, 
 				{
 					"id": "emission_color_texture", 
-					"filename": "model-emit-tex",
+					"filename": "model-emit-tex.png",
 					"type": "EMISSIVE"
 				}
 			]

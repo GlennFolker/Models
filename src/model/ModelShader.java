@@ -31,12 +31,12 @@ public class ModelShader extends Shader{
         defFrag = provider.get("model.frag").readString();
     }
 
-    /** Gets or constructs a shader using the specified {@link Material}. */
-    public static ModelShader get(Material material){
+    /** Gets or constructs a shader using the specified {@link ModelView}. */
+    public static ModelShader get(ModelView view){
         if(defVert == null || defFrag == null) throw new IllegalStateException("Call init() first.");
-        long mask = material.mask();
+        long mask = view.material.mask();
 
-        if(!shaders.containsKey(mask)) shaders.put(mask, new ModelShader(prefix(material)));
+        if(!shaders.containsKey(mask)) shaders.put(mask, new ModelShader(prefix(view.material)));
         return shaders.get(mask);
     }
 

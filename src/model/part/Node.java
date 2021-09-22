@@ -16,11 +16,11 @@ public class Node{
     /** The node ID. */
     public String id;
 
-    /** The translation of this node, typically used for positions. */
+    /** The translation of this node, typically used for positions. Unaffected by animations. */
     public final Vec3 translation = new Vec3();
-    /** The rotation of this node. */
+    /** The rotation of this node. Unaffected by animations. */
     public final Quat rotation = new Quat();
-    /** The scaling of this node. */
+    /** The scaling of this node. Unaffected by animations. */
     public final Vec3 scaling = new Vec3(1f, 1f, 1f);
 
     /** The local transformation of this node. */
@@ -31,9 +31,9 @@ public class Node{
     /** This node's parent, may be null if has none. */
     public Node parent;
     /** This node's children nodes. */
-    public final Seq<Node> children = new Seq<>();
+    public final Seq<Node> children = new Seq<>(2);
     /** All the {@link NodePart}s that this node contains. */
-    public final Seq<NodePart> parts = new Seq<>();
+    public final Seq<NodePart> parts = new Seq<>(2);
 
     public Node(){}
 

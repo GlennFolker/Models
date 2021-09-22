@@ -1,18 +1,22 @@
 import arc.*;
+import arc.assets.*;
 import arc.backend.sdl.*;
 import arc.graphics.*;
 import arc.graphics.Texture.*;
 import arc.graphics.g2d.*;
 import arc.graphics.g3d.*;
+import arc.math.geom.*;
 import arc.struct.*;
+import arc.util.*;
 import arc.util.pooling.*;
 import arc.util.serialization.*;
 import model.*;
 import model.Model.*;
-import model.attribute.Attribute.*;
 import org.junit.jupiter.api.*;
 
 public class ModelTest{
+    static Quat q1 = new Quat();
+
     void app(ApplicationListener listener){
         new SdlApplication(listener, new SdlConfig(){{
             depth = 16;
@@ -32,16 +36,15 @@ public class ModelTest{
 
             @Override
             public void init(){
+                Core.assets = new AssetManager();
+
                 var resolver = Core.assets.getFileHandleResolver();
                 Core.assets.setLoader(Model.class, ".g3dj", new ModelLoader(resolver, new JsonReader()));
                 Core.assets.setLoader(Model.class, ".g3db", new ModelLoader(resolver, new UBJsonReader()));
 
                 cam = new Camera3D();
                 Core.assets.load("model.g3dj", Model.class).loaded = e -> {
-                    e.materials.each(a -> a.each(t -> {
-                        if(t instanceof TexAttr v) v.remap();
-                    }));
-
+                    e.init();
                     model = new ModelInstance(e);
                 };
 
@@ -50,14 +53,24 @@ public class ModelTest{
                 packer.pack("model-emit-tex", new Pixmap(Core.files.internal("model-emit-tex.png")));
                 Core.atlas = packer.generateTextureAtlas(TextureFilter.linear, TextureFilter.linear, false);
 
+                ModelShader.init();
                 Core.assets.finishLoading();
             }
 
             @Override
             public void update(){
-                cam.position.setZero();
+                Time.update();
+
+                cam.position.set(0f, 0f, 10f);
                 cam.resize(Core.graphics.getWidth(), Core.graphics.getHeight());
                 cam.update();
+
+                model.trns.set(
+                    Tmp.v31.set(0f, 0f, 0f),
+                    q1.set(Vec3.Y, Time.time),
+                    Tmp.v32.set(1f, 1f, 1f)
+                );
+                model.calcTrns();
 
                 Core.graphics.clear(0f, 0f, 0f, 0f);
                 Gl.depthMask(true);
@@ -73,7 +86,7 @@ public class ModelTest{
 
                 for(int i = 0; i < size; i++){
                     var view = items[i];
-                    var shader = ModelShader.get(view.material);
+                    var shader = ModelShader.get(view);
                     if(shader != prev){
                         shader.bind();
                         prev = shader;

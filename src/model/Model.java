@@ -79,7 +79,9 @@ public class Model implements Disposable{
 
                 part.offset = indices.size;
                 indices.addAll(partData.require("indices").asShortArray());
-                part.count = indices.size;
+                part.count = indices.size - part.offset;
+
+                pair.parts.add(part);
             }
 
             var mesh = new Mesh(true, vertices.length / attr.sum(a -> a.components), indices.size, attr.toArray());
@@ -105,11 +107,12 @@ public class Model implements Disposable{
 
             for(var alias : ColAlias.all){
                 var name = alias.name();
-                if(data.has(name)){
+                var colData = data.get(name);
+                if(colData != null && colData.isArray()){
                     mat.set(new ColAttr(alias,
-                        data.getFloat(0),
-                        data.getFloat(1),
-                        data.getFloat(2),
+                        colData.getFloat(0),
+                        colData.getFloat(1),
+                        colData.getFloat(2),
                         1f
                     ));
                 }
@@ -132,16 +135,16 @@ public class Model implements Disposable{
     }
 
     protected void loadNodes(JsonValue json){
-        for(var data = json.child; data != null; data = json.next){
+        for(var data = json.child; data != null; data = data.next){
             var node = new Node();
             node.id = data.require("id").asString();
 
             var trns = data.get("translation");
             if(trns != null && trns.isArray()){
                 node.translation.set(
-                    trns.getFloat(0),
-                    trns.getFloat(1),
-                    trns.getFloat(2)
+                    trns.getFloat(0) / 100f,
+                    trns.getFloat(1) / 100f,
+                    trns.getFloat(2) / 100f
                 );
             }
 
@@ -155,12 +158,12 @@ public class Model implements Disposable{
                 );
             }
 
-            var scl = data.get("translation");
+            var scl = data.get("scale");
             if(scl != null && scl.isArray()){
                 node.scaling.set(
-                    scl.getFloat(0),
-                    scl.getFloat(1),
-                    scl.getFloat(2)
+                    scl.getFloat(0) / 100f,
+                    scl.getFloat(1) / 100f,
+                    scl.getFloat(2) / 100f
                 );
             }
 
@@ -185,12 +188,20 @@ public class Model implements Disposable{
         materials.clear();
     }
 
+    /** Should be called after this model has been loaded. */
+    public void init(){
+        materials.each(m -> m.each(a -> {
+            if(a instanceof TexAttr t) t.remap();
+        }));
+    }
+
     /** @return The {@link MeshPart} with the specified ID, or null if there are none. */
     public MeshPart meshPart(String id){
         for(var mesh : meshes){
             var part = mesh.parts.find(p -> p.id.equals(id));
             if(part != null) return part;
         }
+
         return null;
     }
 

@@ -21,10 +21,10 @@ sourceSets{
 
 dependencies{
     annotationProcessor "com.github.Anuken:jabel:$jabelVersion"
-
     compileOnly "com.github.Anuken.Arc:arc-core:$arcVersion"
     compileOnly "com.github.Anuken.Arc:g3d:$arcVersion"
 
+    testAnnotationProcessor "com.github.Anuken:jabel:$jabelVersion"
     testRuntimeOnly 'org.junit.jupiter:junit-jupiter-engine:5.3.1'
     testImplementation 'org.junit.jupiter:junit-jupiter-api:5.3.1'
     testImplementation "com.github.Anuken.Arc:arc-core:$arcVersion"
