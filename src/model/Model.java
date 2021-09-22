@@ -237,6 +237,8 @@ public class Model implements Disposable{
         public MeshPart mesh;
         /** The {@link Material} of this view. */
         public Material material;
+        /** The {@link Environment} of this view. */
+        public Environment env;
 
         @Override
         public void reset(){

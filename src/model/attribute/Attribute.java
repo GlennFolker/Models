@@ -22,12 +22,17 @@ public abstract class Attribute<T, A extends AttrAlias<T>>{
     public final A alias;
 
     /** Basic attribute instantiation. The passed ID parameter must responsibly correlate to one of the supported IDs. */
-    public Attribute(A alias){
+    protected Attribute(A alias){
         this.alias = alias;
     }
 
     /** @return The copy of this attribute. */
     public abstract T copy();
+
+    /** Appends necessary pre-processors of this attribute to the given shader content builder. */
+    public StringBuilder preprocess(StringBuilder builder){
+        return builder.append("#define ").append(alias.flag()).append("\n");
+    }
 
     /** Applies necessary uniforms of this attribute to the given shader. */
     public void apply(Shader shader){}
@@ -291,4 +296,6 @@ public abstract class Attribute<T, A extends AttrAlias<T>>{
             }
         }
     }
+
+
 }

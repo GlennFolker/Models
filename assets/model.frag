@@ -16,6 +16,14 @@ uniform vec4 u_diffuseColor;
 uniform vec4 u_emissiveColor;
 #endif
 
+#if numDirLights > 0
+#define lightingFlag
+#endif
+
+#ifdef lightingFlag
+varying vec4 v_lightDiffuse;
+#endif
+
 void main(){
     #if defined(diffuseTextureFlag) && defined(diffuseColorFlag)
     vec4 color = texture2D(u_diffuseTexture, v_diffuseUV) * u_diffuseColor;
@@ -27,6 +35,8 @@ void main(){
     vec4 color = vec4(1.0);
     #endif
 
+    color *= color.a;
+
     #if defined(emissiveTextureFlag) && defined(emissiveColorFlag)
     vec4 emit = texture2D(u_emissiveTexture, v_emissiveUV) * u_emissiveColor;
     #elif defined(emissiveTextureFlag)
@@ -37,5 +47,11 @@ void main(){
     vec4 emit = vec4(0.0);
     #endif
 
-    gl_FragColor = color * color.a + emit * emit.a;
+    emit *= emit.a;
+
+    #if !defined(lightingFlag)
+    gl_FragColor = color + emit;
+    #else
+    gl_FragColor = (color * v_lightDiffuse) + emit;
+    #endif
 }

@@ -1,5 +1,8 @@
 attribute vec4 a_position;
-attribute vec3 a_normal;
+
+attribute vec4 a_normal;
+uniform mat4 u_normalMatrix;
+varying vec3 v_normal;
 
 uniform int u_renderType;
 uniform mat4 u_proj;
@@ -21,6 +24,22 @@ varying vec2 v_diffuseUV;
 #ifdef emissiveTextureFlag
 uniform vec4 u_emissiveUV;
 varying vec2 v_emissiveUV;
+#endif
+
+#if numDirLights > 0
+#define lightingFlag
+#endif
+
+#ifdef lightingFlag
+varying vec4 v_lightDiffuse;
+#if numDirLights > 0
+struct DirLights{
+    vec4 color;
+    vec3 dir;
+};
+uniform int u_dirLightsSize;
+uniform DirLights u_dirLights[numDirLights];
+#endif
 #endif
 
 void main(){
@@ -47,5 +66,19 @@ void main(){
 
         pos -= vec4(diff * pos.z * 2.0415 / u_res, 0.0, 0.0);
         gl_Position = pos;
+    };
+
+    v_normal = normalize(u_normalMatrix * a_normal).xyz;
+
+    #ifdef lightingFlag
+    #if numDirLights > 0
+    for(int i = 0; i < u_dirLightsSize; i++){
+        vec3 lightDir = -u_dirLights[i].dir;
+        float NdotL = clamp(dot(v_normal, lightDir), 0.0, 1.0);
+        vec4 value = u_dirLights[i].color * NdotL;
+
+        v_lightDiffuse += value;
     }
+    #endif
+    #endif
 }

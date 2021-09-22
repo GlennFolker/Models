@@ -12,6 +12,8 @@ import arc.util.pooling.*;
 import arc.util.serialization.*;
 import model.*;
 import model.Model.*;
+import model.attribute.*;
+import model.attribute.LightsAttr.DirLightsAttr.*;
 import org.junit.jupiter.api.*;
 
 public class ModelTest{
@@ -29,6 +31,7 @@ public class ModelTest{
     public void assetTest(){
         app(new ApplicationListener(){
             ModelInstance model;
+            Environment env;
             Camera3D cam;
 
             final Pool<ModelView> pool = Pools.get(ModelView.class, ModelView::new);
@@ -52,6 +55,9 @@ public class ModelTest{
                 packer.pack("model-tex", new Pixmap(Core.files.internal("model-tex.png")));
                 packer.pack("model-emit-tex", new Pixmap(Core.files.internal("model-emit-tex.png")));
                 Core.atlas = packer.generateTextureAtlas(TextureFilter.linear, TextureFilter.linear, false);
+
+                env = new Environment();
+                env.add(new DirLights().set(Color.white, new Vec3(-1f, -1f, -0.2f)));
 
                 ModelShader.init();
                 Core.assets.finishLoading();
@@ -86,6 +92,8 @@ public class ModelTest{
 
                 for(int i = 0; i < size; i++){
                     var view = items[i];
+                    view.env = env;
+
                     var shader = ModelShader.get(view);
                     if(shader != prev){
                         shader.bind();

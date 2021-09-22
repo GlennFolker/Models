@@ -5,7 +5,9 @@ import arc.files.*;
 import arc.func.*;
 import arc.graphics.g3d.*;
 import arc.graphics.gl.*;
+import arc.math.geom.*;
 import arc.struct.*;
+import arc.util.*;
 import model.Model.*;
 import model.attribute.*;
 
@@ -19,6 +21,10 @@ public class ModelShader extends Shader{
 
     private static String defVert, defFrag;
     private static final LongMap<ModelShader> shaders = new LongMap<>();
+    private static final Mat3D tmp = new Mat3D();
+
+    private final long mask;
+    private final int numDirLights;
 
     /** The renderable model view that this shader should use in {@link #apply()}. */
     public ModelView model;
@@ -34,29 +40,46 @@ public class ModelShader extends Shader{
     /** Gets or constructs a shader using the specified {@link ModelView}. */
     public static ModelShader get(ModelView view){
         if(defVert == null || defFrag == null) throw new IllegalStateException("Call init() first.");
+
+        var env = view.env;
         long mask = view.material.mask();
 
-        if(!shaders.containsKey(mask)) shaders.put(mask, new ModelShader(prefix(view.material)));
-        return shaders.get(mask);
+        var shader = shaders.get(mask);
+        if(shader == null || !shader.valid(view, env)){
+            if(shader != null) shader.dispose();
+            shaders.put(mask, shader = new ModelShader(
+                prefix(view), mask,
+                env == null ? 0 : env.numDirLights()
+            ));
+        }
+
+        return shader;
     }
 
-    private static String prefix(Material material){
+    private static String prefix(ModelView view){
         var builder = new StringBuilder();
-        material.each(attr -> builder.append("#define ").append(attr.alias.flag()).append(";\n"));
+        view.material.each(attr -> attr.preprocess(builder));
+        view.env.each(attr -> attr.preprocess(builder));
 
-        return builder.toString();
+        return builder.append('\n').toString();
     }
 
-    private ModelShader(String prefix){
+    private ModelShader(String prefix, long mask, int numDirLights){
         super(prefix + defVert, prefix + defFrag);
+        this.mask = mask;
+        this.numDirLights = numDirLights;
+    }
+
+    public boolean valid(ModelView view, @Nullable Environment env){
+        return
+            mask == view.material.mask() &&
+            (env == null || numDirLights == env.numDirLights());
     }
 
     @Override
     public void dispose(){
         super.dispose();
-
-        long key = shaders.findKey(this, true, -1);
-        if(key != -1) shaders.remove(key);
+        if(shaders.get(mask) == this) shaders.remove(mask);
     }
 
     @Override
@@ -67,8 +90,10 @@ public class ModelShader extends Shader{
         setUniformf("u_camPos", cam.position);
         setUniformf("u_res", Core.graphics.getWidth(), Core.graphics.getHeight());
         setUniformf("u_scl", cam.width / Core.graphics.getWidth(), cam.height / Core.graphics.getHeight());
+        setUniformMatrix4("u_normalMatrix", tmp.set(model.trns).toNormalMatrix().val);
 
         model.material.each(attr -> attr.apply(this));
+        model.env.each(attr -> attr.apply(this));
     }
 
     public enum RenderType{
