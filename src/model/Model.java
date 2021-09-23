@@ -69,11 +69,11 @@ public class Model implements Disposable{
                 part.type = switch(typeData){
                     case "points" -> Gl.points;
                     case "lines" -> Gl.lines;
-                    case "lineLoop" -> Gl.lineLoop;
-                    case "lineStrip" -> Gl.lineStrip;
+                    case "lineloop" -> Gl.lineLoop;
+                    case "linestrip" -> Gl.lineStrip;
                     case "triangles" -> Gl.triangles;
-                    case "triangleStrip" -> Gl.triangleStrip;
-                    case "triangleFan" -> Gl.triangleFan;
+                    case "trianglestrip" -> Gl.triangleStrip;
+                    case "trianglefan" -> Gl.triangleFan;
                     default -> throw new IllegalArgumentException("Invalid primitive type: '" + typeData + "'");
                 };
 
