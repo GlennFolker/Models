@@ -42,9 +42,8 @@ public class ModelTest{
             public void init(){
                 Core.assets = new AssetManager();
 
-                var resolver = Core.assets.getFileHandleResolver();
-                Core.assets.setLoader(Model.class, ".g3dj", new ModelLoader(resolver, new JsonReader()));
-                Core.assets.setLoader(Model.class, ".g3db", new ModelLoader(resolver, new UBJsonReader()));
+                Core.assets.setLoader(Model.class, ".g3dj", new ModelLoader(Core.files::internal, new JsonReader()));
+                Core.assets.setLoader(Model.class, ".g3db", new ModelLoader(Core.files::internal, new UBJsonReader()));
 
                 cam = new Camera3D();
                 Core.assets.load("model.g3dj", Model.class).loaded = e -> {

@@ -34,8 +34,10 @@ public class Node{
     /** All the {@link NodePart}s that this node contains. */
     public final Seq<NodePart> parts = new Seq<>(2);
 
+    /** Constructs an empty node. */
     public Node(){}
 
+    /** Constructs a node based on another node. */
     public Node(Node from){
         id = from.id;
         parent = from.parent;
@@ -43,20 +45,23 @@ public class Node{
         translation.set(from.translation);
         rotation.set(from.rotation);
         scaling.set(from.scaling);
-        parts.set(from.parts.map(NodePart::new));
+        parts.set(from.parts.map(n -> n.copy(this)));
         for(var child : from.children.entries()) children.put(child.key, child.value.copy());
 
         calcTrns();
     }
 
+    /** @return An exact copy of this node. */
     public Node copy(){
         return new Node(this);
     }
 
+    /** Recursively calculates the node transforms with this parent's transform, if any. */
     public void calcTrns(){
         calcTrns(parent != null ? parent.worldTrns : null);
     }
 
+    /** Recursively calculates the node transforms relative to the given transform, or itself if not given any. */
     public void calcTrns(Mat3D trns){
         localTrns.set(translation, rotation, scaling);
         if(trns != null) worldTrns.set(trns).mul(localTrns);
@@ -64,6 +69,7 @@ public class Node{
         for(var child : children.values()) child.calcTrns();
     }
 
+    /** Gathers all {@link ModelView}s necessary of this node. */
     public void views(Pool<ModelView> pool, Seq<ModelView> array){
         for(var part : parts) array.add(part.view(pool));
         for(var child : children.values()) child.views(pool, array);
@@ -73,22 +79,30 @@ public class Node{
      * The specific parts of a {@link Node}; the smallest components of a {@link Model}. The node part contains a
      * {@link MeshPart}, a {@link Material}, and specific UV mappings, and participates in rendering of a {@link ModelView}.
      */
-    public class NodePart{
+    public static class NodePart{
+        /** The node that this part is bound to. */
+        public final Node node;
+
         /** The {@link MeshPart} that is bound to this node part. */
         public MeshPart mesh;
         /** The {@link Material} that is bound to this node part. */
         public Material material;
 
-        public NodePart(){}
+        /** Constructs an empty node part. */
+        public NodePart(Node node){
+            this.node = node;
+        }
 
-        public NodePart(NodePart from){
+        /** Constructs a new node part based on another node part. */
+        public NodePart(Node node, NodePart from){
+            this.node = node;
             mesh = from.mesh;
             material = from.material;
         }
 
-        /** @return The {@link Node} this part is bound to. */
-        public Node node(){
-            return Node.this;
+        /** @return An exact copy of this node part. */
+        public NodePart copy(Node node){
+            return new NodePart(node, this);
         }
 
         /** @return A {@link ModelView} that matches this node part's properties. */
