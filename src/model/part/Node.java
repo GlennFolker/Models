@@ -6,7 +6,6 @@ import arc.util.pooling.*;
 import model.*;
 import model.Model.*;
 import model.attribute.*;
-import model.part.MeshPair.*;
 
 /**
  * A node represents an object within a {@link Model}. Nodes have IDs, translations, rotations, and scales. They act like
@@ -31,7 +30,7 @@ public class Node{
     /** This node's parent, may be null if has none. */
     public Node parent;
     /** This node's children nodes. */
-    public final Seq<Node> children = new Seq<>(2);
+    public final ObjectMap<String, Node> children = new ObjectMap<>(6);
     /** All the {@link NodePart}s that this node contains. */
     public final Seq<NodePart> parts = new Seq<>(2);
 
@@ -44,8 +43,8 @@ public class Node{
         translation.set(from.translation);
         rotation.set(from.rotation);
         scaling.set(from.scaling);
-        children.set(from.children.map(Node::copy));
         parts.set(from.parts.map(NodePart::new));
+        for(var child : from.children.entries()) children.put(child.key, child.value.copy());
 
         calcTrns();
     }
@@ -62,12 +61,12 @@ public class Node{
         localTrns.set(translation, rotation, scaling);
         if(trns != null) worldTrns.set(trns).mul(localTrns);
 
-        children.each(Node::calcTrns);
+        for(var child : children.values()) child.calcTrns();
     }
 
     public void views(Pool<ModelView> pool, Seq<ModelView> array){
-        parts.each(part -> array.add(part.view(pool)));
-        children.each(child -> child.views(pool, array));
+        for(var part : parts) array.add(part.view(pool));
+        for(var child : children.values()) child.views(pool, array);
     }
 
     /**

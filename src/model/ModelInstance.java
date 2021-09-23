@@ -17,22 +17,21 @@ public class ModelInstance{
     /** The model instance's transformation matrix. */
     public final Mat3D trns = new Mat3D();
 
-    /** All the copied {@link Node}s that this instance contains. */
-    public final Seq<Node> nodes;
-    /** All the copied {@link Material}s that this instance contains. */
-    public final Seq<Material> materials;
+    /** All the copied {@link Node}s that this instance contains, mapped with their IDs. */
+    public final ObjectMap<String, Node> nodes = new ObjectMap<>(2);
+    /** All the copied {@link Material}s that this instance contains, mapped with their IDs. */
+    public final ObjectMap<String, Material> materials = new ObjectMap<>(2);
 
     /** Creates a model instance with the specified {@link Model}. */
     public ModelInstance(Model model){
         this.model = model;
-        nodes = model.nodes.map(Node::copy);
-        materials = model.materials.map(Material::copy);
-
-        nodes.each(this::remapNodes);
+        for(var entry : model.nodes) nodes.put(entry.key, entry.value.copy());
+        for(var entry : model.materials) materials.put(entry.key, entry.value.copy());
+        for(var node : nodes.values()) remapNodes(node);
     }
 
     private void remapNodes(Node parent){
-        for(var node : parent.children){
+        for(var node : parent.children.values()){
             for(var part : node.parts){
                 part.material = material(part.material.id);
             }
@@ -43,7 +42,7 @@ public class ModelInstance{
 
     /** Calculates the transforms of this model's {@link Node}s. */
     public void calcTrns(){
-        nodes.each(node -> node.calcTrns(trns));
+        for(var node : nodes.values()) node.calcTrns(trns);
     }
 
     /**
@@ -51,28 +50,22 @@ public class ModelInstance{
      * @param array The array to be filled with the pooled {@link ModelView}s.
      */
     public void views(Pool<ModelView> pool, Seq<ModelView> array){
-        nodes.each(node -> node.views(pool, array));
+        for(var node : nodes.values()) node.views(pool, array);
     }
 
     /** @return The {@link Material} with the specified ID, or null if there are none. */
     public Material material(String id){
-        return materials.find(m -> m.id.equals(id));
+        return materials.get(id);
     }
 
     /** @return The recursively searched {@link Node} with the specified ID, or null if there are none. */
     public Node node(Node parent, String id){
         var set = parent == null ? nodes : parent.children;
-        for(var node : set){ // Flat checks first.
-            if(node.id.equals(id)) return node;
-        }
+        if(set.containsKey(id)) return set.get(id);
 
-        for(var node : set){ // If not found, search it recursively.
-            if(!node.children.isEmpty()){
-                for(var child : node.children){
-                    var res = node(child, id);
-                    if(res != null) return res;
-                }
-            }
+        for(var node : set.values()){
+            var res = node(node, id);
+            if(res != null) return res;
         }
 
         return null;

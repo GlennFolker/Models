@@ -13,7 +13,6 @@ import model.attribute.Attribute.ColAttr.*;
 import model.attribute.Attribute.FAttr.*;
 import model.attribute.Attribute.TexAttr.*;
 import model.part.*;
-import model.part.MeshPair.*;
 import model.part.Node.*;
 
 /** A model is a complete set of meshes with specified indices offset and length, model nodes tree, and materials. */
@@ -21,12 +20,14 @@ public class Model implements Disposable{
     /** The model ID. */
     public String id = "";
 
-    /** All the {@link MeshPair}s that this model contains. */
-    public final Seq<MeshPair> meshes = new Seq<>();
-    /** All the {@link Node}s that this model contains. */
-    public final Seq<Node> nodes = new Seq<>();
-    /** All the {@link Material}s that this model contains. */
-    public final Seq<Material> materials = new Seq<>();
+    /** All the {@link Mesh}s that this model contains. */
+    protected final Seq<Mesh> meshes = new Seq<>(2);
+    /** All the {@link MeshPart}s that this model contains, mapped with their IDs. */
+    protected final ObjectMap<String, MeshPart> meshParts = new ObjectMap<>(6);
+    /** All the {@link Node}s that this model contains, mapped with their IDs. */
+    protected final ObjectMap<String, Node> nodes = new ObjectMap<>(6);
+    /** All the {@link Material}s that this model contains, mapped with their IDs. */
+    protected final ObjectMap<String, Material> materials = new ObjectMap<>(6);
 
     /** Loads a model data with the given JSON properties. */
     public void load(JsonValue json){
@@ -40,8 +41,6 @@ public class Model implements Disposable{
 
     protected void loadMeshes(JsonValue json){
         for(var data = json.child; data != null; data = data.next){
-            var pair = new MeshPair();
-
             var attr = Seq.of(VertexAttribute.class);
             int texUnit = 0;
 
@@ -61,8 +60,9 @@ public class Model implements Disposable{
             var vertices = data.require("vertices").asFloatSeq();
             var indices = new ShortSeq();
 
+            Seq<MeshPart> parts = new Seq<>(2);
             for(var partData = data.require("parts").child; partData != null; partData = partData.next){
-                var part = pair.new MeshPart();
+                var part = new MeshPart();
                 part.id = partData.require("id").asString();
 
                 var typeData = partData.require("type").asString().toLowerCase();
@@ -81,15 +81,18 @@ public class Model implements Disposable{
                 indices.addAll(partData.require("indices").asShortArray());
                 part.count = indices.size - part.offset;
 
-                pair.parts.add(part);
+                parts.add(part);
             }
 
             var mesh = new Mesh(true, vertices.length / attr.sum(a -> a.components), indices.size, attr.toArray());
             mesh.setVertices(vertices);
             mesh.setIndices(indices.toArray());
 
-            pair.mesh = mesh;
-            meshes.add(pair);
+            meshes.add(mesh);
+            for(var part : parts){
+                part.mesh = mesh;
+                meshPart(part);
+            }
         }
     }
 
@@ -130,7 +133,7 @@ public class Model implements Disposable{
                 }
             }
 
-            materials.add(mat);
+            material(mat);
         }
     }
 
@@ -175,55 +178,62 @@ public class Model implements Disposable{
                 node.parts.add(part);
             }
 
-            nodes.add(node);
+            node(node);
         }
     }
 
     @Override
     public void dispose(){
         meshes.each(Disposable::dispose);
-
         meshes.clear();
+        meshParts.clear();
         nodes.clear();
         materials.clear();
     }
 
     /** Should be called after this model has been loaded. */
     public void init(){
-        materials.each(m -> m.each(a -> {
+        for(var mat : materials.values()) mat.each(a -> {
             if(a instanceof TexAttr t) t.remap();
-        }));
+        });
+    }
+
+    /** Adds a {@link MeshPart} to this model. Will throw an exception if a mesh part with the same ID is already contained. */
+    public void meshPart(MeshPart part){
+        if(meshParts.containsKey(part.id)) throw new IllegalArgumentException("Mesh part with id '" + part.id + "' already exists.");
+        meshParts.put(part.id, part);
+    }
+
+    /** Adds a {@link Material} to this model. Will throw an exception if a material with the same ID is already contained. */
+    public void material(Material mat){
+        if(materials.containsKey(mat.id)) throw new IllegalArgumentException("Material with id '" + mat.id + "' already exists.");
+        materials.put(mat.id, mat);
+    }
+
+    /** Adds a {@link Node} to this model. Will throw an exception if a node with the same ID is already contained. */
+    public void node(Node node){
+        if(nodes.containsKey(node.id)) throw new IllegalArgumentException("Node with id '" + node.id + "' already exists.");
+        nodes.put(node.id, node);
     }
 
     /** @return The {@link MeshPart} with the specified ID, or null if there are none. */
     public MeshPart meshPart(String id){
-        for(var mesh : meshes){
-            var part = mesh.parts.find(p -> p.id.equals(id));
-            if(part != null) return part;
-        }
-
-        return null;
+        return meshParts.get(id);
     }
 
     /** @return The {@link Material} with the specified ID, or null if there are none. */
     public Material material(String id){
-        return materials.find(m -> m.id.equals(id));
+        return materials.get(id);
     }
 
     /** @return The recursively searched {@link Node} with the specified ID, or null if there are none. */
     public Node node(Node parent, String id){
         var set = parent == null ? nodes : parent.children;
-        for(var node : set){ // Flat checks first.
-            if(node.id.equals(id)) return node;
-        }
+        if(set.containsKey(id)) return set.get(id);
 
-        for(var node : set){ // If not found, search it recursively.
-            if(!node.children.isEmpty()){
-                for(var child : node.children){
-                    var res = node(child, id);
-                    if(res != null) return res;
-                }
-            }
+        for(var node : set.values()){
+            var res = node(node, id);
+            if(res != null) return res;
         }
 
         return null;
