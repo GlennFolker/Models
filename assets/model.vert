@@ -26,12 +26,17 @@ uniform vec4 u_emissiveUV;
 varying vec2 v_emissiveUV;
 #endif
 
-#if numDirLights > 0
+#if numDirLights > 0 || defined(ambLightsFlag)
 #define lightingFlag
 #endif
 
 #ifdef lightingFlag
 varying vec4 v_lightDiffuse;
+
+#ifdef ambLightsFlag
+uniform vec4 u_ambLights;
+#endif
+
 #if numDirLights > 0
 struct DirLights{
     vec4 color;
@@ -71,11 +76,17 @@ void main(){
     v_normal = normalize(u_normalMatrix * a_normal).xyz;
 
     #ifdef lightingFlag
+    #ifdef ambLightsFlag
+    v_lightDiffuse = u_ambLights * u_ambLights.a;
+    #else
+    v_lightDiffuse = vec4(0.0);
+    #endif
+
     #if numDirLights > 0
     for(int i = 0; i < u_dirLightsSize; i++){
-        vec3 lightDir = -u_dirLights[i].dir;
-        float NdotL = clamp(dot(v_normal, lightDir), 0.0, 1.0);
-        vec4 value = u_dirLights[i].color * NdotL;
+        DirLights dirLight = u_dirLights[i];
+        float NdotL = clamp(dot(v_normal, -dirLight.dir), 0.0, 1.0);
+        vec4 value = dirLight.color * dirLight.color.a * NdotL;
 
         v_lightDiffuse += value;
     }

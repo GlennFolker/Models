@@ -129,8 +129,7 @@ public abstract class Attribute<T, A extends AttrAlias<T>>{
         public enum ColAlias implements AttrAlias<ColAttr>{
             diffuse,
             specular,
-            emissive,
-            ambientLight;
+            emissive;
 
             public static final ColAlias[] all = values();
 

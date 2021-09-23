@@ -13,6 +13,7 @@ import arc.util.serialization.*;
 import model.*;
 import model.Model.*;
 import model.attribute.*;
+import model.attribute.LightsAttr.AmbLightsAttr.*;
 import model.attribute.LightsAttr.DirLightsAttr.*;
 import org.junit.jupiter.api.*;
 
@@ -58,6 +59,7 @@ public class ModelTest{
 
                 env = new Environment();
                 env.add(new DirLights().set(Color.white, new Vec3(-1f, -1f, -0.2f)));
+                env.add(new AmbLights().set(1f, 1f, 1f, 0.3f));
 
                 ModelShader.init();
                 Core.assets.finishLoading();
