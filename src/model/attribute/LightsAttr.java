@@ -176,7 +176,7 @@ public abstract class LightsAttr<T extends Lights<T>, V extends LightsAttr<T, V,
 
             public DirLights set(Color color, Vec3 dir){
                 this.color.set(color);
-                this.dir.set(dir);
+                this.dir.set(dir).nor();
                 return this;
             }
 

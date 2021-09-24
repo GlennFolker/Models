@@ -5,6 +5,7 @@ import arc.graphics.*;
 import arc.graphics.Texture.*;
 import arc.graphics.g2d.*;
 import arc.graphics.g3d.*;
+import arc.input.*;
 import arc.math.*;
 import arc.math.geom.*;
 import arc.struct.*;
@@ -36,6 +37,8 @@ public class ModelTest{
             Environment env;
             Camera3D cam;
 
+            float outerPhase;
+            float innerPhase;
             final Pool<ModelView> pool = Pools.get(ModelView.class, ModelView::new);
             final Seq<ModelView> views = Seq.of(false, 100, ModelView.class);
 
@@ -60,8 +63,8 @@ public class ModelTest{
                 Core.atlas = packer.generateTextureAtlas(TextureFilter.linear, TextureFilter.linear, false);
 
                 env = new Environment();
-                env.add(new DirLights().set(Color.white, new Vec3(-1f, -1f, -0.2f)));
-                env.add(new AmbLights().set(1f, 1f, 1f, 0.3f));
+                env.add(new DirLights().set(Color.white, new Vec3(-1f, -1f, -0.3f)));
+                env.add(new AmbLights().set(1f, 1f, 1f, 0.2f));
 
                 ModelShader.init();
                 Core.assets.finishLoading();
@@ -73,14 +76,24 @@ public class ModelTest{
             public void update(){
                 Time.update();
 
-                cam.position.set(0f, 0f, 10f);
+                cam.position.set(0f, 0f, 8f);
                 cam.resize(Core.graphics.getWidth(), Core.graphics.getHeight());
                 cam.update();
 
+                if(Core.input.keyDown(KeyCode.mouseLeft)){
+                    outerPhase = Mathf.approachDelta(outerPhase, 1f, 1f / 45f);
+                    innerPhase = Mathf.approachDelta(innerPhase, 1f, 1f / 35f);
+                }else{
+                    outerPhase = Mathf.approachDelta(outerPhase, 0f, 1f / 45f);
+                    innerPhase = Mathf.approachDelta(innerPhase, 0f, 1f / 35f);
+                }
+
+                var pos = cam.unproject(Tmp.v31.set(Core.input.mouse(), 0f));
+                model.trns.setToRotation(Vec3.Z, Mathf.angle(pos.x, pos.y) - 90f);
+
                 control.begin();
-                float time = Mathf.slope((Time.time / 600f) % 1f) * 3f - 1f;
-                control.animateFrac("node-outer|outer-fold", time);
-                control.animateFrac("node-inner|inner-fold", time);
+                control.animateFrac("node-outer|outer-fold", outerPhase);
+                control.animateFrac("node-inner|inner-fold", innerPhase);
                 control.end();
 
                 Core.graphics.clear(0f, 0f, 0f, 0f);
