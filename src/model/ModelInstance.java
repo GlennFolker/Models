@@ -1,5 +1,6 @@
 package model;
 
+import arc.func.*;
 import arc.math.geom.*;
 import arc.struct.*;
 import arc.util.pooling.*;
@@ -17,17 +18,20 @@ public class ModelInstance{
     /** The model instance's transformation matrix. */
     public final Mat3D trns = new Mat3D();
 
-    /** All the copied {@link Node}s that this instance contains, mapped with their IDs. */
-    public final ObjectMap<String, Node> nodes = new ObjectMap<>(2);
     /** All the copied {@link Material}s that this instance contains, mapped with their IDs. */
-    public final ObjectMap<String, Material> materials = new ObjectMap<>(2);
+    protected final ObjectMap<String, Material> materials = new ObjectMap<>(2);
+    /** All the copied {@link Node}s that this instance contains, mapped with their IDs. */
+    protected final ObjectMap<String, Node> nodes = new ObjectMap<>(2);
+    /** All the copied {@link Anim}s that this model contains, mapped with their IDs. */
+    protected final ObjectMap<String, Anim> animations = new ObjectMap<>(6);
 
     /** Creates a model instance with the specified {@link Model}. */
     public ModelInstance(Model model){
         this.model = model;
-        for(var entry : model.nodes) nodes.put(entry.key, entry.value.copy());
         for(var entry : model.materials) materials.put(entry.key, entry.value.copy());
-        for(var node : nodes.values()) remapNodes(node);
+        for(var entry : model.nodes) nodes.put(entry.key, entry.value.copy());
+        for(var entry : model.animations) animations.put(entry.key, entry.value.copy(from -> node(from.parent, from.id)));
+        nodes(this::remapNodes);
     }
 
     private void remapNodes(Node parent){
@@ -59,15 +63,32 @@ public class ModelInstance{
     }
 
     /** @return The recursively searched {@link Node} with the specified ID, or null if there are none. */
+    public Node node(String id){
+        return node(null, id);
+    }
+
+    /** @return The recursively searched {@link Node} with the specified ID, or null if there are none. */
     public Node node(Node parent, String id){
-        var set = parent == null ? nodes : parent.children;
-        if(set.containsKey(id)) return set.get(id);
+        return Node.get(nodes, parent, id);
+    }
 
-        for(var node : set.values()){
-            var res = node(node, id);
-            if(res != null) return res;
-        }
+    /** @return The {@link Anim} with the specified ID, or null if there are none. */
+    public Anim anim(String id){
+        return animations.get(id);
+    }
 
-        return null;
+    /** Applies the consumer to all {@link Material}s this model contains. */
+    public void materials(Cons<Material> cons){
+        for(var part : materials.values()) cons.get(part);
+    }
+
+    /** Applies the consumer to all {@link Node}s this model contains. */
+    public void nodes(Cons<Node> cons){
+        for(var part : nodes.values()) cons.get(part);
+    }
+
+    /** Applies the consumer to all {@link Anim}s this model contains. */
+    public void anims(Cons<Anim> cons){
+        for(var part : animations.values()) cons.get(part);
     }
 }

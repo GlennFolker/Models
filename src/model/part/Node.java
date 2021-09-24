@@ -1,5 +1,6 @@
 package model.part;
 
+import arc.func.*;
 import arc.math.geom.*;
 import arc.struct.*;
 import arc.util.pooling.*;
@@ -15,6 +16,8 @@ public class Node{
     /** The node ID. */
     public String id;
 
+    /** Whether this node is being animated or not. If true, default transform will be ignored in {@link #calcTrns(Mat3D)}. */
+    public boolean animated;
     /** The translation of this node, typically used for positions. Unaffected by animations. */
     public final Vec3 translation = new Vec3();
     /** The rotation of this node. Unaffected by animations. */
@@ -56,23 +59,62 @@ public class Node{
         return new Node(this);
     }
 
-    /** Recursively calculates the node transforms with this parent's transform, if any. */
+    /** Calculates the node transforms recursively. */
     public void calcTrns(){
-        calcTrns(parent != null ? parent.worldTrns : null);
+        calcTrns(true);
+    }
+
+    /** Calculates the node transforms with this parent's transform, if any. */
+    public void calcTrns(boolean recurse){
+        calcTrns(parent != null ? parent.worldTrns : null, recurse);
     }
 
     /** Recursively calculates the node transforms relative to the given transform, or itself if not given any. */
     public void calcTrns(Mat3D trns){
-        localTrns.set(translation, rotation, scaling);
-        if(trns != null) worldTrns.set(trns).mul(localTrns);
+        calcTrns(trns, true);
+    }
 
-        for(var child : children.values()) child.calcTrns();
+    /** Calculates the node transforms relative to the given transform, or itself if not given any. */
+    public void calcTrns(Mat3D trns, boolean recurse){
+        if(!animated) localTrns.set(translation, rotation, scaling);
+        if(trns != null){
+            worldTrns.set(trns).mul(localTrns);
+        }else{
+            worldTrns.set(localTrns);
+        }
+
+        if(recurse) for(var child : children.values()) child.calcTrns(worldTrns);
     }
 
     /** Gathers all {@link ModelView}s necessary of this node. */
     public void views(Pool<ModelView> pool, Seq<ModelView> array){
         for(var part : parts) array.add(part.view(pool));
         for(var child : children.values()) child.views(pool, array);
+    }
+
+    /** Recursively accepts a consumer to this node and its children. */
+    public void each(Cons<Node> cons){
+        cons.get(this);
+        for(var child : children.values()) child.each(cons);
+    }
+
+    /**
+     * Recursively searches a node using its ID.
+     * @param def Root nodes.
+     * @param parent Parent node to be searched. If null, the root nodes will be used.
+     * @param id The node ID.
+     * @return The node, or null if not found.
+     */
+    public static Node get(ObjectMap<String, Node> def, Node parent, String id){
+        var set = parent == null ? def : parent.children;
+        if(set.containsKey(id)) return set.get(id);
+
+        for(var node : set.values()){
+            var res = get(null, node, id);
+            if(res != null) return res;
+        }
+
+        return null;
     }
 
     /**

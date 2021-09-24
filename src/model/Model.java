@@ -1,5 +1,6 @@
 package model;
 
+import arc.func.*;
 import arc.graphics.*;
 import arc.graphics.gl.*;
 import arc.math.geom.*;
@@ -165,7 +166,7 @@ public class Model implements Disposable{
 
             for(var nodeData = data.require("bones").child; nodeData != null; nodeData = nodeData.next){
                 var nodeId = nodeData.require("boneId").asString();
-                var node = node(null, nodeId);
+                var node = node(nodeId);
                 if(node == null) throw new IllegalArgumentException("Node with ID '" + nodeId + "' not found.");
 
                 var nodeAnim = new NodeAnim(node);
@@ -227,9 +228,9 @@ public class Model implements Disposable{
 
     /** Should be called after this model has been loaded. */
     public void init(){
-        for(var mat : materials.values()) mat.each(a -> {
+        materials(mat -> mat.each(a -> {
             if(a instanceof TexAttr t) t.remap();
-        });
+        }));
     }
 
     /** Adds a {@link MeshPart} to this model. Will throw an exception if a mesh part with the same ID is already contained. */
@@ -272,16 +273,33 @@ public class Model implements Disposable{
     }
 
     /** @return The recursively searched {@link Node} with the specified ID, or null if there are none. */
+    public Node node(String id){
+        return node(null, id);
+    }
+
+    /** @return The recursively searched {@link Node} with the specified ID, or null if there are none. */
     public Node node(Node parent, String id){
-        var set = parent == null ? nodes : parent.children;
-        if(set.containsKey(id)) return set.get(id);
+        return Node.get(nodes, parent, id);
+    }
 
-        for(var node : set.values()){
-            var res = node(node, id);
-            if(res != null) return res;
-        }
+    /** Applies the consumer to all {@link MeshPart}s this model contains. */
+    public void meshParts(Cons<MeshPart> cons){
+        for(var part : meshParts.values()) cons.get(part);
+    }
 
-        return null;
+    /** Applies the consumer to all {@link Material}s this model contains. */
+    public void materials(Cons<Material> cons){
+        for(var part : materials.values()) cons.get(part);
+    }
+
+    /** Applies the consumer to all {@link Node}s this model contains. */
+    public void nodes(Cons<Node> cons){
+        for(var part : nodes.values()) cons.get(part);
+    }
+
+    /** Applies the consumer to all {@link Anim}s this model contains. */
+    public void anims(Cons<Anim> cons){
+        for(var part : animations.values()) cons.get(part);
     }
 
     /** A packed renderable view of a {@link Model} used in {@link ModelShader} to specify renderings. */

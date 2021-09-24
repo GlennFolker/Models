@@ -1,5 +1,6 @@
 package model.part;
 
+import arc.func.*;
 import arc.math.geom.*;
 import arc.struct.*;
 import model.*;
@@ -13,6 +14,28 @@ public class Anim{
     public float duration;
     /** All the {@link NodeAnim}s that this animation contains. */
     public final Seq<NodeAnim> anims = new Seq<>(2);
+
+    /** Constructs an empty animation. */
+    public Anim(){}
+
+    /**
+     * Constructs an animation based on other animation.
+     * @param nodes {@link Node} mapper, to get the nodes that each {@link NodeAnim} will use.
+     */
+    public Anim(Func<Node, Node> nodes, Anim other){
+        id = other.id;
+        duration = other.duration;
+
+        anims.set(other.anims.map(a -> a.copy(nodes.get(a.node))));
+    }
+
+    /**
+     * @param nodes {@link Node} mapper, to get the nodes that each {@link NodeAnim} will use.
+     * @return An exact copy of this animation.
+     */
+    public Anim copy(Func<Node, Node> nodes){
+        return new Anim(nodes, this);
+    }
 
     /** Defines a set of keyframes that manipulate the bound {@link Node}. */
     public static class NodeAnim{
@@ -29,6 +52,19 @@ public class Anim{
         /** Constructs an empty node animation. */
         public NodeAnim(Node node){
             this.node = node;
+        }
+
+        /** Constructs a node animation based on other animation. Note that each {@link Keyframe}s don't get copied. */
+        public NodeAnim(Node node, NodeAnim other){
+            this.node = node;
+            trns.set(other.trns);
+            rot.set(other.rot);
+            scl.set(other.scl);
+        }
+
+        /** @return An exact copy of this node animation. */
+        public NodeAnim copy(Node node){
+            return new NodeAnim(node, this);
         }
 
         /** Sorts all keyframes. */

@@ -5,6 +5,7 @@ import arc.graphics.*;
 import arc.graphics.Texture.*;
 import arc.graphics.g2d.*;
 import arc.graphics.g3d.*;
+import arc.math.*;
 import arc.math.geom.*;
 import arc.struct.*;
 import arc.util.*;
@@ -18,8 +19,6 @@ import model.attribute.LightsAttr.DirLightsAttr.*;
 import org.junit.jupiter.api.*;
 
 public class ModelTest{
-    static Quat q1 = new Quat();
-
     void app(ApplicationListener listener){
         new SdlApplication(listener, new SdlConfig(){{
             depth = 16;
@@ -29,9 +28,11 @@ public class ModelTest{
     }
 
     @Test
-    public void assetTest(){
+    public void generalTest(){
         app(new ApplicationListener(){
             ModelInstance model;
+            Anims control;
+
             Environment env;
             Camera3D cam;
 
@@ -48,7 +49,9 @@ public class ModelTest{
                 cam = new Camera3D();
                 Core.assets.load("model.g3dj", Model.class).loaded = e -> {
                     e.init();
+
                     model = new ModelInstance(e);
+                    control = new Anims(model);
                 };
 
                 var packer = new PixmapPacker(4096, 4096, 4, true);
@@ -62,6 +65,8 @@ public class ModelTest{
 
                 ModelShader.init();
                 Core.assets.finishLoading();
+
+                Log.infoTag("App", "Initialized.");
             }
 
             @Override
@@ -72,12 +77,11 @@ public class ModelTest{
                 cam.resize(Core.graphics.getWidth(), Core.graphics.getHeight());
                 cam.update();
 
-                model.trns.set(
-                    Tmp.v31.set(0f, 0f, 0f),
-                    q1.set(Vec3.Y, Time.time),
-                    Tmp.v32.set(1f, 1f, 1f)
-                );
-                model.calcTrns();
+                control.begin();
+                float time = Mathf.slope((Time.time / 600f) % 1f) * 3f - 1f;
+                control.animateFrac("node-outer|outer-fold", time);
+                control.animateFrac("node-inner|inner-fold", time);
+                control.end();
 
                 Core.graphics.clear(0f, 0f, 0f, 0f);
                 Gl.depthMask(true);
