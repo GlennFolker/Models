@@ -33,8 +33,8 @@ public class ModelShader extends Shader{
 
     /** Call this method to initialize the values of {@link #defVert} and {@link #defFrag}. */
     public static void init(){
-        defVert = provider.get("model.vert").readString();
-        defFrag = provider.get("model.frag").readString();
+        defVert = provider.get("shaders/model.vert").readString();
+        defFrag = provider.get("shaders/model.frag").readString();
     }
 
     /** Gets or constructs a shader using the specified {@link ModelView}. */
